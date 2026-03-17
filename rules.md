@@ -180,6 +180,15 @@ features and multi-phase work.
    Co-Authored-By: Claude <noreply@anthropic.com>
    ```
 
+### Git Security
+
+- **Never commit** with company/personal email. Use `@users.noreply.github.com`.
+- **Before pushing to public repo**, verify no sensitive data in:
+  - Commit author (`git log --format="%an <%ae>"`)
+  - File contents (API keys, internal IPs, server addresses, credentials)
+  - `.git/config` (credential settings — not pushed but check anyway)
+- **If sensitive data found in history**: re-init git and force push clean history.
+
 ### Evidence & Analysis
 
 - Cite `file:line` for factual claims about code.
