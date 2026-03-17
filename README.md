@@ -42,6 +42,17 @@ cd <project-root>
 git config user.email "<your-github-username>@users.noreply.github.com"
 ```
 
+Also add these to your project's `.gitignore`:
+
+```
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+secrets.json
+```
+
 ### 1. Deploy to a project
 
 ```bash
