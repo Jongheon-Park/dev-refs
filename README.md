@@ -32,12 +32,14 @@ dev-refs/                          (this repo)
 
 ## Setup
 
-### 0. Prerequisites (once per PC)
+### 0. Prerequisites (per public project)
 
-Set a safe git email to prevent company/personal email exposure in public repos:
+Set a safe git email to prevent company/personal email exposure in public repos.
+Do NOT use `--global` if you also use a company GitLab — set per project instead:
 
 ```bash
-git config --global user.email "<your-github-username>@users.noreply.github.com"
+cd <project-root>
+git config user.email "<your-github-username>@users.noreply.github.com"
 ```
 
 ### 1. Deploy to a project

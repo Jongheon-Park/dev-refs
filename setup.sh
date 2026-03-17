@@ -59,6 +59,17 @@ else
   echo "[LINK] .claude/CLAUDE.md → $RULES_SOURCE"
 fi
 
+# 4. Check git email safety
+if [ -d "$PROJECT_ROOT/.git" ]; then
+  CURRENT_EMAIL=$(cd "$PROJECT_ROOT" && git config user.email 2>/dev/null || echo "")
+  if echo "$CURRENT_EMAIL" | grep -qv "noreply"; then
+    echo ""
+    echo "[WARN] Git email is '$CURRENT_EMAIL'"
+    echo "       For public repos, run:"
+    echo "       cd $PROJECT_ROOT && git config user.email \"<github-username>@users.noreply.github.com\""
+  fi
+fi
+
 echo ""
 echo "=== Done ==="
 echo "Project structure:"
