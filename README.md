@@ -32,6 +32,14 @@ dev-refs/                          (this repo)
 
 ## Setup
 
+### 0. Prerequisites (once per PC)
+
+Set a safe git email to prevent company/personal email exposure in public repos:
+
+```bash
+git config --global user.email "<your-github-username>@users.noreply.github.com"
+```
+
 ### 1. Deploy to a project
 
 ```bash
