@@ -9,4 +9,15 @@ desktop.ini
 *.swp
 *.swo
 
+# Secrets & credentials
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+secrets.json
+*.secret
+
 # Legacy files are tracked (for reference), no exclusions needed
