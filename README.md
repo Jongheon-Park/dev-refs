@@ -82,10 +82,20 @@ project-root/
 Claude Code auto-loads both `CLAUDE.md` and `.claude/CLAUDE.md`, so rules
 and project data are both available every session.
 
-### 2. Update rules across all projects
+### 2. Update dev-refs
 
-Just edit `rules.md` in this repo. All symlinked projects pick up the change
-immediately — no manual copying needed.
+```bash
+cd /path/to/dev-refs && git pull
+```
+
+Symlinked `rules.md` updates automatically in all linked projects.
+
+> **Note:** If `git pull` fails with `fatal: refusing to merge unrelated histories`,
+> delete and re-clone:
+> ```bash
+> rm -rf /path/to/dev-refs
+> git clone https://github.com/Jongheon-Park/dev-refs.git /path/to/dev-refs
+> ```
 
 ### 3. Scenarios
 
