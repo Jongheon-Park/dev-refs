@@ -95,8 +95,10 @@ Scan for project files:
 ### Session Start
 
 1. Run `git log --oneline -10` to catch up on recent work.
-2. Read `docs/ai-docs/_index.md` ONLY if the task requires architecture context.
-3. Read relevant `docs/profiles/*.md` ONLY if the task involves stack-specific patterns.
+2. Read `docs/ai-docs/_memory.md` for recent work context and pending items.
+3. Read `docs/ai-docs/_index.md` ONLY if the task requires architecture context.
+4. Read relevant `docs/ai-docs/mental-model/*.md` ONLY if modifying that domain.
+5. Read relevant `docs/profiles/*.md` ONLY if the task involves stack-specific patterns.
 
 ## Project Knowledge
 
@@ -114,8 +116,8 @@ dependency change, build config change). NOT after every task.
 in **English**, regardless of conversation language. Human-facing UI strings
 are exempt.
 
-**Tickets** (`docs/ai-docs/tickets/<status>/YYMMDD-<name>.md`) track substantial
-features and multi-phase work.
+**Tickets** (`docs/ai-docs/tickets/<status>/YYMMDD-<category>-<name>.md`) track
+substantial features and multi-phase work.
 
 - Phases requiring design before coding are marked **(plan mode)** — use the
   `EnterPlanMode` tool, explore + design, get user approval, then `ExitPlanMode`.

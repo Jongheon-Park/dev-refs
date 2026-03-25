@@ -18,12 +18,23 @@ dev-refs/                          (this repo)
 ├── CLAUDE.md                      ← Project data template
 ├── rules.md                       ← Universal rules (symlinked into projects)
 ├── setup.sh                       ← One-command deploy script
+├── skills/                        ← Slash command skills (copied into projects)
+│   ├── plan.md                    CMD 1 — Planner
+│   ├── discuss.md                 CMD 1 — Planner
+│   ├── research.md                CMD 1 — Planner
+│   ├── write-ticket.md            CMD 1 — Planner
+│   ├── implement.md               CMD 2 — Coder
+│   ├── review.md                  CMD 2 — Coder
+│   ├── document-dependency.md     CMD 2 — Coder
+│   ├── test.md                    CMD 3 — Tester
+│   ├── rebuild-docs.md            CMD 3 — Tester
+│   └── chat-over-session.md       (cross-CMD utility)
 └── docs/
     ├── ai-docs/                   ← Project state/diagrams/tickets store
     │   ├── _index.md
     │   ├── diagrams/
     │   ├── deps/
-    │   └── tickets/
+    │   └── tickets/{idea,todo,wip,done,dropped}/
     └── profiles/                  ← Stack-specific rules
         ├── cpp-mfc.md
         ├── cpp-imgui.md
@@ -62,6 +73,8 @@ bash /path/to/dev-refs/setup.sh <project-root>
 This will:
 - Copy `CLAUDE.md` (skips if already exists)
 - Copy `docs/ai-docs/` and `docs/profiles/`
+- Create ticket directories (`idea/`, `todo/`, `wip/`, `done/`, `dropped/`)
+- Copy `skills/` → `.claude/commands/` (each file skipped if already exists)
 - Symlink `rules.md` → `<project>/.claude/CLAUDE.md`
 
 Result in project:
@@ -69,7 +82,8 @@ Result in project:
 project-root/
 ├── CLAUDE.md              ← Project data (Summary, Tech Stack, MEMORY)
 ├── .claude/
-│   └── CLAUDE.md          → symlink to dev-refs/rules.md
+│   ├── CLAUDE.md          → symlink to dev-refs/rules.md
+│   └── commands/          ← Skills (/plan, /implement, ...)
 └── docs/
     ├── ai-docs/
     │   ├── _index.md
@@ -123,6 +137,65 @@ Same as A. Analyzes and documents existing source code.
 
 ---
 
+## Skills
+
+Markdown files in `skills/` are copied to `.claude/commands/` on deployment.
+Run with `/command-name` in Claude Code.
+
+### CMD 1 — Planner
+
+Documents only. No source code changes allowed.
+
+| Command | Description |
+|:---|:---|
+| `/plan <feature>` | Research → design → save ticket. No code changes. Verified by subagent. |
+| `/discuss <topic>` | Open brainstorming. No file changes. Challenge assumptions. |
+| `/research <question>` | Anti-hallucination analysis. No source → delete. Unknown → "I don't know." |
+| `/write-ticket <topic>` | Create/edit tickets. `idea/`→`todo/`→`wip/`→`done/` |
+
+### CMD 2 — Coder
+
+Read documents, write code. Cannot start without a ticket.
+
+| Command | Description |
+|:---|:---|
+| `/implement <ticket>` | Ticket required. Verify plan → code → security check → commit + report. |
+| `/review <target>` | Code review. Critical/Important/Minor classification. Saves report. |
+| `/document-dependency <pkg>` | Document external library API against actual source. |
+
+### CMD 3 — Tester
+
+Run tests only. No code changes. Deliver results as reports to CMD 2.
+
+| Command | Description |
+|:---|:---|
+| `/test <ticket-stem>` | Build + test → write test report. No code changes. |
+| `/rebuild-docs` | Regenerate `_index.md` and `mental-model/` from current source. |
+
+### Utility
+
+| Command | Description |
+|:---|:---|
+| `/chat-over-session <name>` | File-based messaging between two Claude Code sessions. |
+
+### Three-CMD Workflow
+
+```
+[CMD 1 — Planner]              [CMD 2 — Coder]              [CMD 3 — Tester]
+/plan, /discuss,               /implement, /review,          /test, /rebuild-docs
+/research, /write-ticket       /document-dependency
+
+  ↓ ticket (plan)               ↑ reads ticket                ↑ reads code
+       docs/ai-docs/tickets/ ──→ implements ──→ code ────────→ runs tests
+                                 ↑                              ↓
+                                 └──── reads test report ───────┘
+                                       (docs/ai-docs/tickets/)
+```
+
+**Communication:** All CMDs share `docs/ai-docs/tickets/`. Plans flow CMD 1→2. Test reports flow CMD 3→2.
+
+---
+
 ## Diagrams
 
 ### File Relationship
@@ -161,7 +234,7 @@ What each file is responsible for:
 
 ```mermaid
 block-beta
-    columns 2
+    columns 3
 
     block:claude["CLAUDE.md (per-project)"]:1
         columns 1
@@ -179,6 +252,14 @@ block-beta
         H["Code Standards"]
         I["Workflow & Process"]
         J["Context Discipline"]
+    end
+
+    block:skills["skills/ → .claude/commands/"]:1
+        columns 1
+        K["CMD 1: plan, discuss, research, write-ticket"]
+        L["CMD 2: implement, review, document-dependency"]
+        M["CMD 3: test, rebuild-docs"]
+        N["Utility: chat-over-session"]
     end
 ```
 
@@ -200,6 +281,8 @@ flowchart TD
     H -->|No| I[Copy docs/profiles/]
     H -->|Yes| J[Skip]
 
+    A --> S["Copy skills/ → .claude/commands/<br/>(each file: skip if exists)"]
+
     A --> K{.claude/CLAUDE.md exists?}
     K -->|No| L["Create symlink<br/>→ rules.md"]
     K -->|Symlink| M[Skip]
@@ -211,11 +294,46 @@ flowchart TD
     G --> O
     I --> O
     J --> O
+    S --> O
     L --> O
     M --> O
 ```
 
 ---
+
+## Recording System — 3 Layers
+
+Project knowledge is managed in 3 layers.
+
+```
+docs/ai-docs/
+├── _index.md          ← Layer 1: Architecture (rarely changes)
+├── _memory.md         ← Layer 2: Session memory (updated each session)
+├── mental-model/      ← Layer 3: Operational knowledge (updated after code changes)
+├── deps/              ← External API facts
+├── tickets/           ← Work records and reports
+└── diagrams/          ← Architecture diagrams
+```
+
+| Layer | File | When updated | Content |
+|:---|:---|:---|:---|
+| 1 | `_index.md` | Architecture changes | Module map, build config, tech stack |
+| 2 | `_memory.md` | Every session start/end | Recent work, pending items, ephemeral notes |
+| 3 | `mental-model/*.md` | After code changes | Contracts, coupling, extension points, gotchas |
+
+### Document Production Map
+
+| Document Type | Filename Pattern | Location | Producer | Consumer |
+|:---|:---|:---|:---|:---|
+| Ticket (plan) | `YYMMDD-<cat>-<name>.md` | `tickets/<status>/` | CMD 1 | CMD 2 |
+| Test Report | `YYMMDD-test-report-<stem>.md` | `tickets/wip/` | CMD 3 | CMD 2 |
+| Review Report | `YYMMDD-review-report-<stem>.md` | `tickets/wip/` | CMD 2 | CMD 2 |
+| Research Report | `YYMMDD-research-<topic>.md` | `tickets/wip/` | CMD 1 | CMD 1, 2 |
+| Completion Report | `### Result` in ticket | Existing ticket | CMD 2 | All |
+| Dependency Doc | `<pkg>[v<ver>].md` | `deps/` | CMD 2 | CMD 2 |
+| Project Doc | `_index.md` + `diagrams/` | `ai-docs/` | CMD 3 | All |
+| Session Memory | `_memory.md` | `ai-docs/` | CMD 2 | All |
+| Operational Knowledge | `<domain>.md` | `mental-model/` | CMD 3 | All |
 
 ## File Roles
 
@@ -223,16 +341,19 @@ flowchart TD
 |:---|:---|:---|
 | `CLAUDE.md` | **Auto** (every session) | Project data, Architecture Rules, MEMORY |
 | `.claude/CLAUDE.md` | **Auto** (every session) | Universal rules (symlink → `rules.md`) |
+| `.claude/commands/*.md` | On `/command` execution | Slash command skills |
 | `docs/ai-docs/_index.md` | Architecture context needed | Project state, architecture, directory map |
+| `docs/ai-docs/_memory.md` | **Session start** | Recent work, pending items, ephemeral notes |
+| `docs/ai-docs/mental-model/*.md` | Modifying that domain | Contracts, coupling, gotchas |
 | `docs/ai-docs/diagrams/*.md` | Architecture analysis | Mermaid diagrams |
 | `docs/ai-docs/deps/*.md` | Using that package | Verified API facts |
-| `docs/ai-docs/tickets/*.md` | Working on that task | Feature tickets, phased progress |
+| `docs/ai-docs/tickets/*.md` | Working on that task | Tickets, test/review/research reports |
 | `docs/profiles/*.md` | Discovery + stack-specific tasks | Stack-specific rules (auto-generated if missing) |
 
 ## Token Efficiency
 
 - `CLAUDE.md` + `.claude/CLAUDE.md` stay in context — everything else loads on demand
-- **Session start**: `git log --oneline -10` (~10 lines) to catch up.
+- **Session start**: `git log --oneline -10` + `_memory.md` to catch up.
   `_index.md` loaded only when architecture context is needed
 - **After each task**: No doc updates. Commit messages serve as the devlog
 - **MEMORY**: Updated only at session end or on user request
@@ -245,4 +366,4 @@ Automatically moved after migration. Kept for reference. Do not copy to new proj
 
 ---
 
-**Last Updated:** 2026-03-17
+**Last Updated:** 2026-03-26

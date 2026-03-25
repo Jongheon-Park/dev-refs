@@ -33,7 +33,8 @@ Target: **[YYYY-MM milestone description].**
 
 # MEMORY
 
-<!-- AI-maintained. Update at session end or on user request. Never mid-task. -->
+<!-- Auto-loaded every session. Keep minimal — essentials only.
+     Detailed history and notes go in docs/ai-docs/_memory.md instead. -->
 
 ## Current Focus
 
