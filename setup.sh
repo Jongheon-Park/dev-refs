@@ -7,14 +7,54 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$1"
 
+MODE="symlink"
+if [ "${2:-}" = "--copy" ]; then
+  MODE="copy"
+fi
+
 if [ -z "$PROJECT_ROOT" ]; then
   echo "Usage: bash setup.sh <project-root>"
   echo "Example: bash setup.sh D:/my-project"
   exit 1
 fi
 
+# Validate target directory exists
+if [ ! -d "$PROJECT_ROOT" ]; then
+  echo "[ERROR] Target directory does not exist: $PROJECT_ROOT"
+  exit 1
+fi
+
 # Resolve to absolute path
-PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd || echo "$PROJECT_ROOT")"
+PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
+
+# Validate source files exist
+MISSING=0
+for src in "rules.md" "discovery.md" "agents" "docs/ai-docs" "docs/profiles" "skills"; do
+  if [ ! -e "$SCRIPT_DIR/$src" ]; then
+    echo "[ERROR] Source not found: $SCRIPT_DIR/$src"
+    MISSING=1
+  fi
+done
+if [ "$MISSING" -eq 1 ]; then
+  echo "Aborting: missing source files."
+  exit 1
+fi
+
+# Helper: create symlink with fallback to copy on Windows
+safe_link() {
+  local src="$1" dst="$2"
+  if ln -s "$src" "$dst" 2>/dev/null; then
+    return 0
+  else
+    echo "[WARN] Symlink failed, falling back to copy"
+    if [ -d "$src" ]; then
+      cp -r "$src" "$dst"
+    else
+      cp "$src" "$dst"
+    fi
+    return 0
+  fi
+}
 
 echo "=== dev-refs setup ==="
 echo "Source:  $SCRIPT_DIR"
@@ -46,59 +86,68 @@ else
   echo "[COPY] docs/profiles/"
 fi
 
-# 3. Create mental-model directory
-mkdir -p "$PROJECT_ROOT/docs/ai-docs/mental-model"
-if [ ! -f "$PROJECT_ROOT/docs/ai-docs/mental-model/README.md" ]; then
-  cp "$SCRIPT_DIR/docs/ai-docs/mental-model/README.md" \
-     "$PROJECT_ROOT/docs/ai-docs/mental-model/README.md"
-  echo "[COPY] docs/ai-docs/mental-model/README.md"
-fi
-
-# 4. Create ticket status directories
-for status_dir in idea todo wip done dropped; do
-  mkdir -p "$PROJECT_ROOT/docs/ai-docs/tickets/$status_dir"
-  [ -f "$PROJECT_ROOT/docs/ai-docs/tickets/$status_dir/.gitkeep" ] || \
-    touch "$PROJECT_ROOT/docs/ai-docs/tickets/$status_dir/.gitkeep"
-done
-echo "[DIRS] docs/ai-docs/tickets/{idea,todo,wip,done,dropped}/"
-
-# 5. Copy skills → .claude/commands/
-mkdir -p "$PROJECT_ROOT/.claude/commands"
-for skill in "$SCRIPT_DIR/skills/"*.md; do
-  [ -f "$skill" ] || continue
-  name="$(basename "$skill")"
-  if [ -f "$PROJECT_ROOT/.claude/commands/$name" ]; then
-    echo "[SKIP] .claude/commands/$name already exists"
-  else
-    cp "$skill" "$PROJECT_ROOT/.claude/commands/$name"
-    echo "[COPY] .claude/commands/$name"
-  fi
-done
-
-# 6. Symlink rules.md → .claude/CLAUDE.md
+# 3. rules.md → .claude/CLAUDE.md
 mkdir -p "$PROJECT_ROOT/.claude"
 RULES_SOURCE="$SCRIPT_DIR/rules.md"
 
-if [ -L "$PROJECT_ROOT/.claude/CLAUDE.md" ]; then
-  echo "[SKIP] .claude/CLAUDE.md symlink already exists"
-elif [ -f "$PROJECT_ROOT/.claude/CLAUDE.md" ]; then
-  echo "[WARN] .claude/CLAUDE.md exists as a regular file. Remove it first to use symlink."
+if [ -L "$PROJECT_ROOT/.claude/CLAUDE.md" ] || [ -f "$PROJECT_ROOT/.claude/CLAUDE.md" ]; then
+  echo "[SKIP] .claude/CLAUDE.md already exists"
+elif [ "$MODE" = "copy" ]; then
+  cp "$RULES_SOURCE" "$PROJECT_ROOT/.claude/CLAUDE.md"
+  echo "[COPY] .claude/CLAUDE.md (test mode)"
 else
-  ln -s "$RULES_SOURCE" "$PROJECT_ROOT/.claude/CLAUDE.md"
+  safe_link "$RULES_SOURCE" "$PROJECT_ROOT/.claude/CLAUDE.md"
   echo "[LINK] .claude/CLAUDE.md → $RULES_SOURCE"
 fi
 
-echo ""
-echo "=== Done ==="
+# 4. discovery.md → .claude/discovery.md
+DISCOVERY_SOURCE="$SCRIPT_DIR/discovery.md"
+
+if [ -L "$PROJECT_ROOT/.claude/discovery.md" ] || [ -f "$PROJECT_ROOT/.claude/discovery.md" ]; then
+  echo "[SKIP] .claude/discovery.md already exists"
+elif [ "$MODE" = "copy" ]; then
+  cp "$DISCOVERY_SOURCE" "$PROJECT_ROOT/.claude/discovery.md"
+  echo "[COPY] .claude/discovery.md (test mode)"
+else
+  safe_link "$DISCOVERY_SOURCE" "$PROJECT_ROOT/.claude/discovery.md"
+  echo "[LINK] .claude/discovery.md → $DISCOVERY_SOURCE"
+fi
+
+# 5. agents/ → .claude/agents/
+AGENTS_SOURCE="$SCRIPT_DIR/agents"
+
+if [ -L "$PROJECT_ROOT/.claude/agents" ] || [ -d "$PROJECT_ROOT/.claude/agents" ]; then
+  echo "[SKIP] .claude/agents already exists"
+elif [ "$MODE" = "copy" ]; then
+  cp -r "$AGENTS_SOURCE" "$PROJECT_ROOT/.claude/agents"
+  echo "[COPY] .claude/agents/ (test mode)"
+else
+  safe_link "$AGENTS_SOURCE" "$PROJECT_ROOT/.claude/agents"
+  echo "[LINK] .claude/agents/ → $AGENTS_SOURCE"
+fi
+
+# 6. skills/ → .claude/commands/
+SKILLS_SOURCE="$SCRIPT_DIR/skills"
+
+if [ -L "$PROJECT_ROOT/.claude/commands" ] || [ -d "$PROJECT_ROOT/.claude/commands" ]; then
+  echo "[SKIP] .claude/commands already exists"
+elif [ "$MODE" = "copy" ]; then
+  cp -r "$SKILLS_SOURCE" "$PROJECT_ROOT/.claude/commands"
+  echo "[COPY] .claude/commands/ (test mode)"
+else
+  safe_link "$SKILLS_SOURCE" "$PROJECT_ROOT/.claude/commands"
+  echo "[LINK] .claude/commands/ → $SKILLS_SOURCE"
+fi
+
+echo "=== Done ($MODE mode) ==="
 echo "Project structure:"
 echo "  $PROJECT_ROOT/"
 echo "  ├── CLAUDE.md              (project data)"
 echo "  ├── .claude/"
-echo "  │   ├── CLAUDE.md          → rules.md (symlink)"
-echo "  │   └── commands/          (skills)"
+echo "  │   ├── CLAUDE.md          → rules.md"
+echo "  │   ├── discovery.md       → discovery.md"
+echo "  │   ├── agents/            → agents/"
+echo "  │   └── commands/          → skills/"
 echo "  └── docs/"
 echo "      ├── ai-docs/"
-echo "      │   ├── _memory.md           (session memory)"
-echo "      │   ├── mental-model/        (operational knowledge)"
-echo "      │   └── tickets/{idea,todo,wip,done,dropped}/"
 echo "      └── profiles/"
