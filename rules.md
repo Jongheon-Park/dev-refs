@@ -2,6 +2,46 @@
 
 <!-- Symlinked into projects as .claude/CLAUDE.md. Edit here → all projects update. -->
 
+## System File Registry
+
+All files that constitute this rule system. When updating rules, **all listed files must be reviewed** — not just the ones mentioned in conversation.
+
+```
+0.Rules/
+├── rules.md              # Universal rules (this file) — copied as .claude/CLAUDE.md
+├── plan.md               # /plan slash command
+├── implement.md          # /implement slash command
+├── test.md               # /test slash command
+├── _status.md            # Session state template
+├── discovery.md          # Project discovery procedure
+├── agents/               # Subagent definitions
+│   ├── explorer.md
+│   ├── reviewer.md
+│   └── architect.md
+├── skills/               # Reusable skill modules
+│   └── *.md
+└── docs/ai-docs/
+    ├── _status.md        # Live session state (per project)
+    ├── _index.md         # Architecture index
+    ├── _memory.md        # Session history
+    ├── _trash/           # Soft-delete staging — emptied manually by user only
+    ├── deps/             # Dependency API notes
+    ├── diagrams/         # Architecture diagrams
+    ├── mental-model/     # Mental model documents
+    ├── profiles/         # Stack-specific profiles
+    │   └── _legacy/refs/deps/
+    └── tickets/
+        ├── todo/         # Planned, not started
+        ├── wip/          # In progress
+        ├── done/         # Completed
+        ├── dropped/      # Cancelled
+        └── idea/         # Backlog / not yet planned
+```
+
+**Rule:** Any update to the workflow (rules.md, slash commands, agents) must be checked against ALL files in this registry for consistency. Partial updates that leave sibling files on an older version are a defect.
+
+---
+
 ## Project Discovery
 
 **Trigger:** `docs/ai-docs/_index.md` has `[TBD]` placeholders.
@@ -14,6 +54,20 @@ Ask user before starting:
 ---
 
 ## Session Start
+
+**Trigger: every time a conversation begins — including after `/clear`, project switch, or any new chat session.**
+Claude must execute this automatically without waiting for user instruction.
+
+0. **Verify required directories exist.** Before anything else, check:
+   ```bash
+   ls docs/ai-docs/tickets/todo docs/ai-docs/tickets/wip docs/ai-docs/tickets/done docs/ai-docs/tickets/dropped docs/ai-docs/tickets/idea
+   ```
+   Any missing → recreate immediately:
+   ```bash
+   mkdir -p docs/ai-docs/tickets/todo docs/ai-docs/tickets/wip docs/ai-docs/tickets/done docs/ai-docs/tickets/dropped docs/ai-docs/tickets/idea
+   touch docs/ai-docs/tickets/todo/.gitkeep docs/ai-docs/tickets/wip/.gitkeep docs/ai-docs/tickets/done/.gitkeep docs/ai-docs/tickets/dropped/.gitkeep docs/ai-docs/tickets/idea/.gitkeep
+   ```
+   Report to user if any were missing: "⚠️ Missing directories restored: [list]"
 
 1. **Read `docs/ai-docs/_status.md`** — lightweight state file (10–20 lines). This is the only file read automatically.
 2. **Report current status to user** based on its contents:
@@ -218,6 +272,69 @@ It must stay under 20 lines. It is the single source of truth for "what's in fli
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+### File Deletion Policy
+
+**Never delete files directly.** Always move to trash first.
+
+```bash
+# 삭제 대신 trash로 이동
+mv -n <file> docs/ai-docs/_trash/
+```
+
+Rules:
+- `mv -n` 필수 — 덮어쓰기 방지 (no-overwrite)
+- trash 경로: `docs/ai-docs/_trash/` (없으면 먼저 생성)
+- `_trash/`는 사용자가 직접 비움 — Claude가 비우지 않음
+- `git stash`, `git clean`, `rm`, `rmdir` 은 settings.json deny로 하드 차단됨
+
+### Destructive Command Gate
+
+**ABSOLUTE PROHIBITION — Claude must NEVER run these commands on `docs/` paths, under any circumstances, even if user says "clean up" or "reset":**
+
+```
+rm -rf docs/
+rd /s docs/
+git clean -fd
+git clean -fx
+git clean -f docs/
+rmdir /s docs/
+```
+
+These commands destroy untracked files permanently. Tickets that are not yet committed will be lost forever.
+
+**For ALL other destructive commands** (outside `docs/`), Claude MUST show the exact command and wait for explicit confirmation:
+> "⚠️ This command will permanently delete/modify files:
+> `<exact command>`
+> Affected paths: `<list>`
+> Proceed? (yes/no)"
+
+**Never infer consent.** "Clean up", "reorganize", "reset" from the user does NOT authorize destructive commands. Ask explicitly.
+
+### Protected Directories
+
+The following directories must NEVER be deleted, moved, or emptied — even if they appear empty:
+
+```
+docs/ai-docs/_trash/
+docs/ai-docs/tickets/todo/
+docs/ai-docs/tickets/wip/
+docs/ai-docs/tickets/done/
+docs/ai-docs/tickets/dropped/
+docs/ai-docs/tickets/idea/
+docs/ai-docs/diagrams/
+docs/ai-docs/mental-model/
+docs/ai-docs/deps/
+docs/ai-docs/
+```
+
+- Each must contain a `.gitkeep` file so git tracks the empty directory.
+- If any of these are missing at session start → recreate immediately before any other work:
+  ```bash
+  mkdir -p docs/ai-docs/_trash docs/ai-docs/tickets/todo docs/ai-docs/tickets/wip docs/ai-docs/tickets/done docs/ai-docs/tickets/dropped docs/ai-docs/tickets/idea docs/ai-docs/diagrams docs/ai-docs/mental-model docs/ai-docs/deps
+  touch docs/ai-docs/_trash/.gitkeep docs/ai-docs/tickets/todo/.gitkeep docs/ai-docs/tickets/wip/.gitkeep docs/ai-docs/tickets/done/.gitkeep docs/ai-docs/tickets/dropped/.gitkeep docs/ai-docs/tickets/idea/.gitkeep
+  ```
+- **NEVER run `rm -rf` on any path under `docs/ai-docs/`.** If cleanup is needed, move files — do not delete directories.
 
 ### Git Security
 

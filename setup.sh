@@ -86,6 +86,23 @@ else
   echo "[COPY] docs/profiles/"
 fi
 
+# Ensure all required ai-docs subdirectories exist (idempotent)
+for dir in \
+  "docs/ai-docs/_trash" \
+  "docs/ai-docs/tickets/todo" \
+  "docs/ai-docs/tickets/wip" \
+  "docs/ai-docs/tickets/done" \
+  "docs/ai-docs/tickets/dropped" \
+  "docs/ai-docs/tickets/idea" \
+  "docs/ai-docs/deps" \
+  "docs/ai-docs/diagrams" \
+  "docs/ai-docs/mental-model"; do
+  full="$PROJECT_ROOT/$dir"
+  mkdir -p "$full"
+  touch "$full/.gitkeep"
+done
+echo "[OK] docs/ai-docs/ subdirectories verified"
+
 # 3. rules.md → .claude/CLAUDE.md
 mkdir -p "$PROJECT_ROOT/.claude"
 RULES_SOURCE="$SCRIPT_DIR/rules.md"
