@@ -15,9 +15,23 @@ Ask user before starting:
 
 ## Session Start
 
-1. Run `git log --oneline -10` to catch up on recent work.
-2. Read `docs/ai-docs/_index.md` ONLY if the task requires architecture context.
-3. Read relevant `docs/profiles/*.md` ONLY if the task involves stack-specific patterns.
+1. **Read `docs/ai-docs/_status.md`** — lightweight state file (10–20 lines). This is the only file read automatically.
+2. **Report current status to user** based on its contents:
+
+   | _status.md state | What to say |
+   |:---|:---|
+   | Active wip, impl done, test FAIL | "진행 중인 작업 있음: `<stem>` (테스트 실패, 재구현 필요). 계속할까요?" |
+   | Active wip, impl done, no test yet | "구현 완료된 작업 있음: `<stem>` (테스트 미실행). `/test <stem>` 준비됨." |
+   | Active wip, no impl yet | "계획된 작업 있음: `<stem>`. `/implement <stem>` 준비됨." |
+   | No active wip | CMD별 기본 대기 상태 (아래 참고) |
+
+3. **CMD-specific default when no active wip:**
+   - **CMD 1 (Planner):** "새 작업을 계획할 준비가 됐어요. `/plan <feature>`를 실행하세요."
+   - **CMD 2 (Coder):** "진행할 티켓이 없습니다. CMD 1에서 `/plan`을 먼저 실행하세요."
+   - **CMD 3 (Tester):** "테스트할 구현 결과물이 없습니다. CMD 2에서 `/implement`을 먼저 실행하세요."
+
+4. **Do NOT auto-load** `_memory.md`, `_index.md`, or any ticket files at session start.
+   Load them only when the task explicitly requires them.
 
 ---
 
@@ -73,18 +87,88 @@ When a user makes a feature or task request, **do not implement immediately**. I
 
 ---
 
+## Slash Command Workflow
+
+The slash commands form a **document chain**. Each step produces output that the next step reads.
+
+### Flow
+
+```
+/plan ──────────→ /implement ──────────→ /test
+                       ↑                     │
+                       │   FAIL_CODE         │
+                       └─── failure report ──┘
+                                             │
+                                   FAIL_DESIGN
+                                             │
+                       /plan ←───────────────┘  (re-plan)
+```
+
+### Document Chain
+
+| Step | Reads | Produces | Saved to |
+|:---|:---|:---|:---|
+| `/plan` | task description, codebase | plan document | `tickets/todo/YYMMDD-<n>.md` |
+| `/implement` | plan + failure report (if any) | code + **implementation report** | `tickets/wip/YYMMDD-impl-report-<n>.md` |
+| `/test` | plan + **implementation report** | verification plan + test report | `tickets/wip/YYMMDD-test-report-<n>.md` |
+
+**Rules:**
+- `/implement` requires a ticket. Will not proceed without it.
+- `/test` requires a ticket AND an implementation report. Will not proceed without both.
+- Never start a step without reading the previous step's output.
+
+### Implementation Report
+
+`/implement` must write this before stopping — it is the handoff to `/test`:
+- What was done (file by file)
+- Deviations from plan (and why)
+- Edge cases intentionally excluded
+- Known risks to probe during testing
+
+### Loop Structure
+
+On test failure, `/test` classifies the failure type:
+
+**FAIL_CODE** (fixable bugs) → return to `/implement`:
+- `/test` saves failure report with exact file:line and suggested fix
+- `/implement` reads the failure report before touching any code
+- Each loop increments the `attempt:` counter in the report header
+
+**FAIL_DESIGN** (plan/architecture is wrong) → escalate to `/plan`:
+- `/test` flags this explicitly and stops the loop
+- Do NOT continue with `/implement` until plan is revised
+
+### 3-Strike Rule on the Loop
+
+If `/implement` → `/test` → `/implement` completes 3 times without passing:
+- `/test` stops the loop and reports to the user
+- Do not suggest a 4th attempt
+- User decides: manual review, re-plan, or abandon
+
+---
+
 ## Project Knowledge
 
 State and architecture live in `docs/ai-docs/_index.md` (AI-maintained).
 
-**When to read:** `git log` first. Load `_index.md` only when architecture context needed.
+**When to read:** Load `_index.md` only when architecture context is needed for the current task.
 **When to update:** ONLY when architecture actually changes. NOT after every task.
 
 **Language:** All AI-authored artifacts must be in **English** regardless of conversation language.
 Human-facing UI strings are exempt.
 
-**Tickets** (`docs/ai-docs/tickets/<status>/YYMMDD-<name>.md`) track substantial features.
+**Tickets** (`docs/ai-docs/tickets/<status>/YYMMDD-<n>.md`) track substantial features.
 Append `### Result (<short-hash>)` only when completing a ticket phase.
+
+---
+
+## _status.md — Lightweight State File
+
+`docs/ai-docs/_status.md` is the **only file read at every session start**.
+It must stay under 20 lines. It is the single source of truth for "what's in flight."
+
+**Updated by:** `/plan`, `/implement`, `/test`, and commit phase (Phase 4 of implement).
+**NOT a history file** — only current and last-session state. History lives in `_memory.md`.
 
 ---
 
@@ -133,7 +217,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### Context Discipline
 
-- **Lazy loading.** Never preload all docs. Start with `git log`, not docs.
+- **Lazy loading.** Never preload all docs. Start with `_status.md`, not full docs.
 - Source code is ground truth; docs supplement it.
 - If docs are stale, say so rather than speculating.
 

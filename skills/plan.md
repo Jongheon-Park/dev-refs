@@ -51,5 +51,36 @@ How to verify it works.
 
    Fix any [HIGH] or [STALE] issues before saving.
 
-5. Save to `docs/ai-docs/tickets/todo/YYMMDD-<category>-<name>.md`
-6. Tell user: "Plan verified and saved. Run `/implement <ticket-stem>` in CMD 2 to execute."
+5. **Determine ticket stem.** Use format: `YYMMDD-<category>-<name>`
+   - Categories: `bug`, `feat`, `refactor`, `chore`, `research`
+   - Example: `260326-feat-auth-login`
+   - Keep name short, lowercase, hyphen-separated.
+
+6. **Save ticket.** Path: `docs/ai-docs/tickets/todo/<stem>.md`
+
+7. **Verify the file was actually created:**
+   ```bash
+   ls docs/ai-docs/tickets/todo/<stem>.md
+   ```
+   If the file does not exist → create it again and re-verify. Do not proceed until confirmed.
+
+8. **Update `_status.md`:**
+   ```markdown
+   ## Active
+   - wip: <stem>
+     - impl: —
+     - test: —
+
+   ## Pending
+   [keep existing entries, or "—"]
+
+   ## Last Session
+   - <YYMMDD>: planned <stem>
+   ```
+
+9. **Report to user** with the exact stem:
+   > "Plan saved: `docs/ai-docs/tickets/todo/<stem>.md`
+   > Ticket stem: **`<stem>`**
+   > Run `/implement <stem>` in CMD 2 to execute."
+
+   Always show the stem explicitly — the user needs the exact value for the next command.
