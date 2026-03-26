@@ -51,8 +51,13 @@ Include this in the final report. Do not skip this step.
 
 ### Step 3: Build & Test
 
-4. **Build.** Run the project's build command. Capture full output.
+4. **Build — always debug.** **NEVER use release/production flags during /test.**
+   - Rust: `cargo build` (NOT `cargo build --release`)
+   - Node: `npm run build:dev` or `tsc` (NOT `npm run build:prod`)
+   - Other: use the dev/debug variant. If only one command exists, use it as-is.
+   - Capture full output.
 5. **Test.** Run the project's test command. Capture full output.
+6. **Release build** is NEVER triggered by Claude. It happens only after the user manually confirms the debug test passed and explicitly requests a release build.
 6. **Analyze.** For each failure: file, line, error message, likely cause, and whether it's a **code bug** or a **design/plan issue**.
 
 ### Step 4: Write Report

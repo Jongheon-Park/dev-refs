@@ -178,6 +178,10 @@ It must stay under 20 lines. It is the single source of truth for "what's in fli
 2. **Surgical changes.** Change only what the task requires. Follow existing style.
 3. **Module structure.** Split files at ~300 lines. Entry file (`mod.rs`, `index.ts`) with public re-exports only.
 4. **Hot-path performance.** Minimal allocation and data locality where benefit outweighs complexity.
+5. **Build modes.**
+   - All builds during `/test` must use **debug mode**. Never use release flags automatically.
+   - Release build is triggered **only by explicit user request** after human testing confirms no issues.
+   - If unsure which command is debug vs release, ask the user before building.
 
 ---
 
