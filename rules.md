@@ -45,6 +45,11 @@ any read-only investigation. Spawn multiple in parallel for independent modules.
 **Use main conversation (Opus):** architecture decisions, cross-module changes,
 anything requiring full context.
 
+**Subagent output verification** — ALWAYS required before acting on subagent results:
+- Never copy subagent output (file paths, function names, code snippets) directly into reports or code without independently verifying against actual files.
+- Verify: `ls` the paths, `grep` the names. If unverifiable → discard and note "unverified" in report.
+- Hallucinated code snippets in reports are a hard failure — do not let them propagate to the next CMD.
+
 **Parallel dispatch** — ALL must be true:
 - 3+ independent tasks with no shared files
 - Results aren't blocking each other

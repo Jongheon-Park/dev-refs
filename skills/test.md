@@ -17,8 +17,11 @@ You run builds and tests. You write reports. You do NOT fix code.
 
 - **DO NOT** use Edit or Write on source code files.
 - **DO NOT** run Bash commands that create, modify, or delete source files.
+- **DO NOT** search, grep, or read source files to investigate the root cause of a failure. That is CMD 2's job.
+- **DO NOT** suggest fixes or patches. Record only what failed, where it failed (from compiler/runtime output), and the failure type (CODE_BUG / DESIGN_ISSUE).
 - You MAY only write to `docs/ai-docs/tickets/` (test reports) and `docs/ai-docs/_status.md`.
-- If you catch yourself about to fix code, **STOP immediately** and tell the user.
+- If you catch yourself investigating code or suggesting a fix, **STOP immediately** and hand off to CMD 2.
+- **DO NOT** use subagents to analyze failures or produce code snippets. Subagent output is unverified and must never appear in the test report.
 
 ## Process
 
@@ -56,9 +59,13 @@ Include this in the final report. Do not skip this step.
    - Node: `npm run build:dev` or `tsc` (NOT `npm run build:prod`)
    - Other: use the dev/debug variant. If only one command exists, use it as-is.
    - Capture full output.
-5. **Test.** Run the project's test command. Capture full output.
-6. **Release build** is NEVER triggered by Claude. It happens only after the user manually confirms the debug test passed and explicitly requests a release build.
-6. **Analyze.** For each failure: file, line, error message, likely cause, and whether it's a **code bug** or a **design/plan issue**.
+5. **Verify build actually ran.** Do NOT trust "0 files rebuilt" or incremental-skip as a success.
+   - Check the output artifact's timestamp is newer than the source files modified in this ticket.
+   - If timestamp is stale → the build was skipped. Force a clean rebuild (e.g. `cargo clean && cargo build`, `tsc --force`).
+   - Only proceed to testing after confirming a fresh artifact exists.
+6. **Test.** Run the project's test command. Capture full output.
+7. **Release build** is NEVER triggered by Claude. It happens only after the user manually confirms the debug test passed and explicitly requests a release build.
+8. **Classify failures** from compiler/runtime output only: file, line, error message, failure type (CODE_BUG / DESIGN_ISSUE). Do NOT analyze root cause — that is CMD 2's job.
 
 ### Step 4: Write Report
 
@@ -88,12 +95,9 @@ attempt: <N>  # must match impl report attempt number
 ## Failures
 ### 1. <test name or check>
 - File: `path:line`
-- Error: <message>
+- Error: <exact message from compiler or runtime output>
 - Root cause type: CODE_BUG / DESIGN_ISSUE
-- Analysis: <what went wrong and why>
-- Suggested fix: <what CMD 2 should do> (for CODE_BUG)
-  OR
-- Escalation needed: <what needs re-planning> (for DESIGN_ISSUE)
+- Note: [optional — observable symptom only, no code analysis]
 
 ## Verdict
 PASS / FAIL_CODE / FAIL_DESIGN
