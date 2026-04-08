@@ -1,6 +1,6 @@
 ---
 name: write-ticket
-description: "CMD 1 — Planner. Create or edit a ticket."
+description: "Create or edit a ticket."
 argument-hint: "[topic for new, or path/stem to edit]"
 ---
 

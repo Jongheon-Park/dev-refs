@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "CMD 1 — Planner. Design only. Produces documents, never source code."
+description: "Phase 1 — Plan. Design only, never source code."
 argument-hint: "[feature or topic]"
 ---
 
@@ -82,6 +82,6 @@ How to verify it works.
 9. **Report to user** with the exact stem:
    > "Plan saved: `docs/ai-docs/tickets/todo/<stem>.md`
    > Ticket stem: **`<stem>`**
-   > Run `/implement <stem>` in CMD 2 to execute."
+   > Run `/implement <stem>` to execute (sonnet recommended)."
 
    Always show the stem explicitly — the user needs the exact value for the next command.

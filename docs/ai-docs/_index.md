@@ -96,8 +96,8 @@
 
 - **Detected stack**: [language + framework + key libs]
 - **Active profiles**:
-  - `profiles/[stack].md` — [reason: e.g. "MFC UI detected"]
-  - `profiles/[lib].md` — [reason: e.g. "OpenCV dependency found"]
+  - `profiles/[stack].md` — [reason]
+  - `profiles/[lib].md` — [reason]
 
 ---
 

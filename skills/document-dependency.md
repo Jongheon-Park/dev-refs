@@ -1,6 +1,6 @@
 ---
 name: document-dependency
-description: "CMD 2 — Coder. Document an external library's API to prevent hallucination."
+description: "Document an external library's API to prevent hallucination."
 argument-hint: "[package name]"
 ---
 

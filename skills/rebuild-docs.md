@@ -1,6 +1,6 @@
 ---
 name: rebuild-docs
-description: "CMD 3 — Tester. Regenerate project documentation from current source."
+description: "Regenerate project documentation from current source."
 argument-hint: "[specific area, 'mental-model', or blank for full rebuild]"
 ---
 

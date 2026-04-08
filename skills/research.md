@@ -1,6 +1,6 @@
 ---
 name: research
-description: "CMD 1 — Planner. No hallucination. Cite everything or say I don't know."
+description: "No hallucination. Cite everything or say I don't know."
 argument-hint: "[question, file path, or topic]"
 ---
 

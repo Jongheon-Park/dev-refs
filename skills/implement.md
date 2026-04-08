@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "CMD 2 — Coder. Execute a plan — write code, then wait for user to trigger commit."
+description: "Phase 2 — Code. Execute a plan, then wait for user to trigger commit."
 argument-hint: "<ticket-stem or ticket-path> (REQUIRED)"
 ---
 
@@ -11,7 +11,7 @@ argument-hint: "<ticket-stem or ticket-path> (REQUIRED)"
 ## Gate — ticket required
 
 If no ticket argument given, **STOP**. Say:
-> "A ticket is required. Run `/plan <feature>` in CMD 1 first, or specify a ticket stem."
+> "A ticket is required. Run `/plan <feature>` first, or specify a ticket stem."
 
 ### Finding the ticket
 
@@ -115,7 +115,7 @@ If no ticket argument given, **STOP**. Say:
 
 11. **STOP.** Do NOT auto-commit. Say:
     > "Code complete (attempt <N>). Implementation report saved.
-    > Run `/test <stem>` in CMD 3 to verify."
+    > Run `/test <stem>` to verify (sonnet recommended)."
 
 ## Phase 4: Commit (only when user says "commit")
 

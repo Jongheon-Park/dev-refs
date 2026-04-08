@@ -35,11 +35,11 @@ Two Claude Code sessions can talk through a shared file.
 
 ## Example flow
 ```
-[CMD 1] /chat-over-session Planner design-login
+[Session A] /chat-over-session Planner design-login
         → writes question about login architecture
 
-[CMD 2] /chat-over-session Developer join design-login
+[Session B] /chat-over-session Developer join design-login
         → reads question, writes response
 
-[CMD 1] → reads response, continues discussion
+[Session A] → reads response, continues discussion
 ```

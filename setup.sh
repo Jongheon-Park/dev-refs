@@ -1,20 +1,43 @@
 #!/bin/bash
-# setup.sh — Deploy dev-refs to a project
-# Usage: bash /path/to/dev-refs/setup.sh <project-root>
+# setup.sh — Deploy or update dev-refs for a project
+# Usage:
+#   bash /path/to/dev-refs/setup.sh <project-root>            # initial setup (symlink, default)
+#   bash /path/to/dev-refs/setup.sh <project-root> --copy     # initial setup (copy mode, Windows fallback)
+#   bash /path/to/dev-refs/setup.sh <project-root> --update   # refresh kit-owned files in existing project
 
 set -e
 
+# === Argument parsing ===
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$1"
 
+PROJECT_ROOT=""
 MODE="symlink"
-if [ "${2:-}" = "--copy" ]; then
-  MODE="copy"
-fi
+UPDATE_MODE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --copy) MODE="copy" ;;
+    --update) UPDATE_MODE=true ;;
+    --*) echo "[ERROR] Unknown flag: $arg"; exit 1 ;;
+    *)
+      if [ -z "$PROJECT_ROOT" ]; then
+        PROJECT_ROOT="$arg"
+      else
+        echo "[ERROR] Unexpected argument: $arg"
+        exit 1
+      fi
+      ;;
+  esac
+done
 
 if [ -z "$PROJECT_ROOT" ]; then
-  echo "Usage: bash setup.sh <project-root>"
+  echo "Usage: bash setup.sh <project-root> [--copy|--update]"
+  echo "  (no flag) Initial setup, symlink mode (default)"
+  echo "  --copy    Initial setup, copy mode (Windows fallback)"
+  echo "  --update  Refresh kit-owned files in existing project"
+  echo ""
   echo "Example: bash setup.sh D:/my-project"
+  echo "         bash setup.sh D:/my-project --update"
   exit 1
 fi
 
@@ -40,7 +63,9 @@ if [ "$MISSING" -eq 1 ]; then
   exit 1
 fi
 
-# Helper: create symlink with fallback to copy on Windows
+# === Helper functions ===
+
+# Create symlink with fallback to copy on Windows
 safe_link() {
   local src="$1" dst="$2"
   if ln -s "$src" "$dst" 2>/dev/null; then
@@ -56,6 +81,88 @@ safe_link() {
   fi
 }
 
+# Refresh a kit-owned path in update mode.
+# - If destination is a symlink: verify, fix if broken
+# - If destination is a copy (regular file/dir): overwrite contents
+# - If destination is missing: create (symlink)
+# Args: src dst name [is_dir]
+#   is_dir = "yes" for directories, "no" for files (default: no)
+refresh_path() {
+  local src="$1" dst="$2" name="$3" is_dir="${4:-no}"
+  if [ -L "$dst" ]; then
+    if [ -e "$dst" ]; then
+      echo "[OK] $name (symlink, auto-updated)"
+    else
+      rm "$dst"
+      safe_link "$src" "$dst"
+      echo "[FIX] $name (broken symlink → re-created)"
+    fi
+  elif [ "$is_dir" = "yes" ] && [ -d "$dst" ]; then
+    # Directory copy mode — refresh .md files
+    local count=0
+    for f in "$src"/*.md; do
+      [ -f "$f" ] || continue
+      cp -f "$f" "$dst/"
+      count=$((count + 1))
+    done
+    echo "[UPDATE] $name ($count files refreshed)"
+  elif [ "$is_dir" = "no" ] && [ -f "$dst" ]; then
+    cp -f "$src" "$dst"
+    echo "[UPDATE] $name"
+  else
+    safe_link "$src" "$dst"
+    echo "[NEW] $name"
+  fi
+}
+
+# === Update mode ===
+if [ "$UPDATE_MODE" = true ]; then
+  VERSION=$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")
+  echo "=== dev-refs update (V$VERSION) ==="
+  echo "Source:  $SCRIPT_DIR"
+  echo "Target:  $PROJECT_ROOT"
+  echo ""
+
+  if [ ! -d "$PROJECT_ROOT/.claude" ]; then
+    echo "[ERROR] No .claude/ directory found in target."
+    echo "        Run setup.sh without --update first to initialize."
+    exit 1
+  fi
+
+  refresh_path "$SCRIPT_DIR/rules.md"      "$PROJECT_ROOT/.claude/CLAUDE.md"    ".claude/CLAUDE.md"    no
+  refresh_path "$SCRIPT_DIR/discovery.md"  "$PROJECT_ROOT/.claude/discovery.md" ".claude/discovery.md" no
+  refresh_path "$SCRIPT_DIR/agents"        "$PROJECT_ROOT/.claude/agents"       ".claude/agents/"      yes
+  refresh_path "$SCRIPT_DIR/skills"        "$PROJECT_ROOT/.claude/commands"     ".claude/commands/"    yes
+
+  # .claude/settings.json — always copied (never symlinked, per-project)
+  SETTINGS_SOURCE="$SCRIPT_DIR/.claude/settings.json"
+  SETTINGS_DEST="$PROJECT_ROOT/.claude/settings.json"
+  if [ ! -f "$SETTINGS_DEST" ]; then
+    cp "$SETTINGS_SOURCE" "$SETTINGS_DEST"
+    echo "[NEW] .claude/settings.json (SessionStart hook installed)"
+  elif diff -q "$SETTINGS_SOURCE" "$SETTINGS_DEST" >/dev/null 2>&1; then
+    echo "[OK] .claude/settings.json (matches kit version)"
+  else
+    echo "[DIFF] .claude/settings.json differs from kit version"
+    echo "       Manual review: diff $SETTINGS_SOURCE $SETTINGS_DEST"
+  fi
+
+  echo ""
+  echo "User-owned files (not touched):"
+  echo "  - CLAUDE.md             (project data)"
+  echo "  - docs/profiles/        (stack-specific rules)"
+  echo "  - docs/ai-docs/         (project state, tickets, deps, mental-model)"
+  echo ""
+  echo "=== Update complete (V$VERSION) ==="
+  echo ""
+  echo "Optional cleanup of pre-V1.3 artifacts (run manually if needed):"
+  echo "  rm -rf $PROJECT_ROOT/docs/_legacy/"
+  echo "  rm $PROJECT_ROOT/docs/profiles/cpp-*.md"
+
+  exit 0
+fi
+
+# === Initial install ===
 echo "=== dev-refs setup ==="
 echo "Source:  $SCRIPT_DIR"
 echo "Target:  $PROJECT_ROOT"

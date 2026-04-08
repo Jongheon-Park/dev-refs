@@ -1,6 +1,6 @@
 ---
 name: review
-description: "CMD 2 — Coder. Code review. Find bugs, not compliments."
+description: "Code review. Find bugs, not compliments."
 argument-hint: "[file, branch, or commit range]"
 ---
 
@@ -51,4 +51,4 @@ Approve / Request changes / Needs discussion
 - Critical: N | Important: N | Minor: N
 ```
 
-Tell user: "Review report saved. CMD 2 should address Critical/Important items."
+Tell user: "Review report saved. Address Critical/Important items in implementation."

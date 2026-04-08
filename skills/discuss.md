@@ -1,6 +1,6 @@
 ---
 name: discuss
-description: "CMD 1 — Planner. Brainstorm freely — no file changes."
+description: "Brainstorm freely — no file changes."
 argument-hint: "[topic or question]"
 ---
 
@@ -26,5 +26,5 @@ You are a **discussion partner**. You brainstorm. You do NOT create or modify fi
    - Reference actual code: "In `file:line`, the current pattern is..."
 3. Don't jump to solutions. Explore the problem first.
 4. When the user decides on a direction, suggest:
-   - "/plan <topic>" to formalize in CMD 1
+   - "/plan <topic>" to formalize
    - "/write-ticket <topic>" to track it
