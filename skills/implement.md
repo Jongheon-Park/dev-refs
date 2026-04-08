@@ -99,7 +99,7 @@ If no ticket argument given, **STOP**. Say:
    ```
    Confirm the impl-report file appears in the listing.
 
-10. **Update `_status.md`:**
+10. **Update `docs/ai-docs/_status.md`:**
     ```markdown
     ## Active
     - wip: <stem>
@@ -152,7 +152,7 @@ If no ticket argument given, **STOP**. Say:
 
 15. **Update `_memory.md`.** Add entry to Recent Work. Update Pending if items resolved or new ones found.
 
-16. **Clear `_status.md` Active section** (ticket is done):
+16. **Clear `docs/ai-docs/_status.md` Active section** (ticket is done):
     ```markdown
     ## Active
     - —

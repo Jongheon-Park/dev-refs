@@ -34,13 +34,8 @@ Target: **[YYYY-MM milestone description].**
 # MEMORY
 
 <!-- Auto-loaded every session. Keep minimal — essentials only.
-     Detailed history and notes go in docs/ai-docs/_memory.md instead. -->
-
-## Current Focus
-
-<!-- ONE item only. What is currently in progress. Clear when done. -->
-
--
+     Current work-in-progress is tracked in docs/ai-docs/_status.md (auto-loaded by SessionStart hook).
+     Detailed history → docs/ai-docs/_memory.md. -->
 
 ## Build & Workflow
 

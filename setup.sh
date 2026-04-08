@@ -29,7 +29,7 @@ PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"
 
 # Validate source files exist
 MISSING=0
-for src in "rules.md" "discovery.md" "agents" "docs/ai-docs" "docs/profiles" "skills"; do
+for src in "rules.md" "discovery.md" "agents" "docs/ai-docs" "docs/profiles" "skills" ".claude/settings.json"; do
   if [ ! -e "$SCRIPT_DIR/$src" ]; then
     echo "[ERROR] Source not found: $SCRIPT_DIR/$src"
     MISSING=1
@@ -103,6 +103,15 @@ for dir in \
 done
 echo "[OK] docs/ai-docs/ subdirectories verified"
 
+# Ensure docs/ai-docs/_status.md exists (required by SessionStart hook)
+STATUS_FILE="$PROJECT_ROOT/docs/ai-docs/_status.md"
+if [ ! -f "$STATUS_FILE" ]; then
+  cp "$SCRIPT_DIR/docs/ai-docs/_status.md" "$STATUS_FILE"
+  echo "[COPY] docs/ai-docs/_status.md (template)"
+else
+  echo "[SKIP] docs/ai-docs/_status.md already exists"
+fi
+
 # 3. rules.md → .claude/CLAUDE.md
 mkdir -p "$PROJECT_ROOT/.claude"
 RULES_SOURCE="$SCRIPT_DIR/rules.md"
@@ -156,6 +165,17 @@ else
   echo "[LINK] .claude/commands/ → $SKILLS_SOURCE"
 fi
 
+# 7. .claude/settings.json (SessionStart hook for _status.md auto-load)
+# Always copy (never symlink) — settings.json is per-project, not shared.
+SETTINGS_SOURCE="$SCRIPT_DIR/.claude/settings.json"
+
+if [ -f "$PROJECT_ROOT/.claude/settings.json" ]; then
+  echo "[SKIP] .claude/settings.json already exists (project settings preserved)"
+else
+  cp "$SETTINGS_SOURCE" "$PROJECT_ROOT/.claude/settings.json"
+  echo "[COPY] .claude/settings.json (SessionStart hook)"
+fi
+
 echo "=== Done ($MODE mode) ==="
 echo "Project structure:"
 echo "  $PROJECT_ROOT/"
@@ -164,7 +184,9 @@ echo "  ├── .claude/"
 echo "  │   ├── CLAUDE.md          → rules.md"
 echo "  │   ├── discovery.md       → discovery.md"
 echo "  │   ├── agents/            → agents/"
-echo "  │   └── commands/          → skills/"
+echo "  │   ├── commands/          → skills/"
+echo "  │   └── settings.json      (SessionStart hook)"
 echo "  └── docs/"
 echo "      ├── ai-docs/"
+echo "      │   └── _status.md     (auto-loaded each session)"
 echo "      └── profiles/"
